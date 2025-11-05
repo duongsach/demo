@@ -127,7 +127,6 @@
 
     let lastRunState = 0;
     let nonRemoteCount = 0;
-    let checkCount = 0;
     let watchdogTimer = null;
 
     // Disable khi mới load
@@ -173,7 +172,7 @@
           btnSendFreq.disabled = !enableCtrl;
           freq.disabled = !enableCtrl;
 
-          // 🕒 Reset watchdog mỗi khi có dữ liệu
+          // 🕒 Reset watchdog mỗi khi có dữ liệu mới
           clearTimeout(watchdogTimer);
           watchdogTimer = setTimeout(() => {
             const resetState = {
@@ -184,22 +183,7 @@
             };
             client.publish(topicState, JSON.stringify(resetState));
             showStatusMessage('⚠️ MQTT không phản hồi >10s → gửi reset');
-            checkCount = 0;
           }, 10000);
-
-          // ✅ Sau mỗi frame, tăng bộ đếm kiểm tra
-          checkCount++;
-          if (checkCount >= 5) {
-            const resetState = {
-              modeControl: 0,
-              vfdStatus: 0,
-              vfdOperatingFrequency: 0,
-              vfdOutputVoltage: 0
-            };
-            client.publish(topicState, JSON.stringify(resetState));
-            console.log("Đã gửi reset sau 5 lần kiểm tra");
-            checkCount = 0;
-          }
 
           // ⚙️ Logic: sau 3 lần không phải Remote mới gửi STOP
           if (!enableCtrl) {

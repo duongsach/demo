@@ -126,15 +126,16 @@
     const voltNow = document.getElementById('voltNow');
 
     let lastRunState = 0;
-    let nonRemoteCount = 0; // 👈 Bộ đếm số lần không ở chế độ Remote
+    let nonRemoteCount = 0;
+    let checkCount = 0;
+    let watchdogTimer = null;
 
-    // ✅ Disable tất cả khi mới load
+    // Disable khi mới load
     btnStart.disabled = true;
     btnStop.disabled = true;
     btnSendFreq.disabled = true;
     freq.disabled = true;
 
-    // Giới hạn tần số tối đa 50 Hz
     freq.addEventListener('input', () => {
       if (parseFloat(freq.value) > 50) freq.value = 50;
       if (parseFloat(freq.value) < 0) freq.value = 0;
@@ -143,18 +144,6 @@
     client.on('connect', () => {
       status.textContent = '✅ Đã kết nối đến MQTT Broker';
       client.subscribe(topicState);
-
-      // ✅ Gửi dữ liệu reset mỗi 10s
-      setInterval(() => {
-        const resetState = {
-          modeControl: 0,
-          vfdStatus: 0,
-          vfdOperatingFrequency: 0,
-          vfdOutputVoltage: 0
-        };
-        client.publish(topicState, JSON.stringify(resetState));
-        console.log("Đã gửi reset state:", resetState);
-      }, 10000);
     });
 
     client.on('message', (topic, message) => {
@@ -166,7 +155,6 @@
           else if (data.modeControl === 2) modeStr = 'Remote';
           modeText.textContent = modeStr;
 
-          // đèn vàng nếu Remote
           modeLed.classList.toggle('on', data.modeControl === 2);
           modeLed.classList.toggle('auto', data.modeControl === 2);
 
@@ -185,17 +173,44 @@
           btnSendFreq.disabled = !enableCtrl;
           freq.disabled = !enableCtrl;
 
+          // 🕒 Reset watchdog mỗi khi có dữ liệu
+          clearTimeout(watchdogTimer);
+          watchdogTimer = setTimeout(() => {
+            const resetState = {
+              modeControl: 0,
+              vfdStatus: 0,
+              vfdOperatingFrequency: 0,
+              vfdOutputVoltage: 0
+            };
+            client.publish(topicState, JSON.stringify(resetState));
+            showStatusMessage('⚠️ MQTT không phản hồi >10s → gửi reset');
+            checkCount = 0;
+          }, 10000);
+
+          // ✅ Sau mỗi frame, tăng bộ đếm kiểm tra
+          checkCount++;
+          if (checkCount >= 5) {
+            const resetState = {
+              modeControl: 0,
+              vfdStatus: 0,
+              vfdOperatingFrequency: 0,
+              vfdOutputVoltage: 0
+            };
+            client.publish(topicState, JSON.stringify(resetState));
+            console.log("Đã gửi reset sau 5 lần kiểm tra");
+            checkCount = 0;
+          }
+
           // ⚙️ Logic: sau 3 lần không phải Remote mới gửi STOP
           if (!enableCtrl) {
             nonRemoteCount++;
             showStatusMessage(`⚠️ Đang ở chế độ Local (${nonRemoteCount}/3)`);
-
             if (nonRemoteCount >= 3) {
               const stopPayload = JSON.stringify({ Run: 0, Frequency: 0 });
               client.publish(topicCmd, stopPayload);
               lastRunState = 0;
               showStatusMessage('🛑 Đã tự động dừng sau 3 lần không ở chế độ Remote');
-              nonRemoteCount = 0; // reset lại sau khi dừng
+              nonRemoteCount = 0;
             }
           } else {
             nonRemoteCount = 0; // reset khi quay lại Remote

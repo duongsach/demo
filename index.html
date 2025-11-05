@@ -1,0 +1,248 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Điều Khiển Quạt Từ Xa</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #0f1724;
+      color: #fff;
+      text-align: center;
+      padding: 40px;
+    }
+    h1 { margin-bottom: 20px; }
+    .container {
+      background: #162033;
+      border-radius: 12px;
+      padding: 30px 40px;
+      display: inline-block;
+      text-align: left;
+      min-width: 360px;
+    }
+    .row {
+      margin: 15px 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    label {
+      display: inline-block;
+      width: 180px;
+      text-align: right;
+      margin-right: 10px;
+    }
+    input[type=number] {
+      width: 100px;
+      padding: 5px;
+      text-align: right;
+      border-radius: 4px;
+      border: none;
+      outline: none;
+    }
+    button {
+      padding: 8px 18px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 0 5px;
+    }
+    button.start { background: #16a34a; color: #fff; }
+    button.stop { background: #dc2626; color: #fff; }
+    button.send { background: #2563eb; color: #fff; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .led {
+      display:inline-block;
+      width:15px;
+      height:15px;
+      border-radius:50%;
+      margin-left:10px;
+      background:#555;
+    }
+    .on.auto {background:#facc15; box-shadow:0 0 10px #facc15;}
+    .on.run {background:#22c55e; box-shadow:0 0 10px #22c55e;}
+    #status {margin-top:15px; font-size:14px; color:#9ca3af; text-align:center;}
+  </style>
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+</head>
+<body>
+  <h1>Điều Khiển Quạt Từ Xa</h1>
+  <div class="container">
+
+    <div class="row">
+      <button id="btnStart" class="start">BẬT (START)</button>
+      <button id="btnStop" class="stop">TẮT (STOP)</button>
+    </div>
+
+    <div class="row">
+      <label for="freq">Tần số đặt (Hz):</label>
+      <input id="freq" type="number" min="0" max="50" step="0.1" value="0">
+      <button id="btnSendFreq" class="send">Gửi</button>
+    </div>
+
+    <div class="row">
+      <label>Chế độ điều khiển:</label>
+      <span id="modeText">--</span>
+      <div id="modeLed" class="led"></div>
+    </div>
+
+    <div class="row">
+      <label>Trạng thái quạt:</label>
+      <span id="runText">--</span>
+      <div id="runLed" class="led"></div>
+    </div>
+
+    <div class="row">
+      <label>Tần số hiện tại:</label>
+      <span id="freqNow">-- Hz</span>
+    </div>
+
+    <div class="row">
+      <label>Điện áp ngõ ra:</label>
+      <span id="voltNow">-- V</span>
+    </div>
+
+    <div id="status">⏳ Đang kết nối MQTT...</div>
+  </div>
+
+  <script>
+    const broker = 'wss://438c2ead2a734258bd69b47271629c50.s1.eu.hivemq.cloud:8884/mqtt';
+    const options = { username: 'Mqtt2025', password: 'Mqtt2025', reconnectPeriod: 2000 };
+    const topicCmd = 'esp8266/vfd/cmd';
+    const topicState = 'esp8266/vfd/state';
+    const client = mqtt.connect(broker, options);
+
+    const status = document.getElementById('status');
+    const btnStart = document.getElementById('btnStart');
+    const btnStop = document.getElementById('btnStop');
+    const btnSendFreq = document.getElementById('btnSendFreq');
+    const freq = document.getElementById('freq');
+    const runLed = document.getElementById('runLed');
+    const runText = document.getElementById('runText');
+    const modeLed = document.getElementById('modeLed');
+    const modeText = document.getElementById('modeText');
+    const freqNow = document.getElementById('freqNow');
+    const voltNow = document.getElementById('voltNow');
+
+    let lastRunState = 0;
+    let nonRemoteCount = 0; // 👈 Bộ đếm số lần không ở chế độ Remote
+
+    // ✅ Disable tất cả khi mới load
+    btnStart.disabled = true;
+    btnStop.disabled = true;
+    btnSendFreq.disabled = true;
+    freq.disabled = true;
+
+    // Giới hạn tần số tối đa 50 Hz
+    freq.addEventListener('input', () => {
+      if (parseFloat(freq.value) > 50) freq.value = 50;
+      if (parseFloat(freq.value) < 0) freq.value = 0;
+    });
+
+    client.on('connect', () => {
+      status.textContent = '✅ Đã kết nối đến MQTT Broker';
+      client.subscribe(topicState);
+
+      // ✅ Gửi dữ liệu reset mỗi 10s
+      setInterval(() => {
+        const resetState = {
+          modeControl: 0,
+          vfdStatus: 0,
+          vfdOperatingFrequency: 0,
+          vfdOutputVoltage: 0
+        };
+        client.publish(topicState, JSON.stringify(resetState));
+        console.log("Đã gửi reset state:", resetState);
+      }, 10000);
+    });
+
+    client.on('message', (topic, message) => {
+      if (topic === topicState) {
+        try {
+          const data = JSON.parse(message.toString());
+          let modeStr = 'None';
+          if (data.modeControl === 1) modeStr = 'Local';
+          else if (data.modeControl === 2) modeStr = 'Remote';
+          modeText.textContent = modeStr;
+
+          // đèn vàng nếu Remote
+          modeLed.classList.toggle('on', data.modeControl === 2);
+          modeLed.classList.toggle('auto', data.modeControl === 2);
+
+          const isRunning = data.vfdStatus === 1;
+          lastRunState = isRunning ? 1 : 0;
+          runText.textContent = isRunning ? 'Đang chạy' : 'Dừng';
+          runLed.classList.toggle('on', isRunning);
+          runLed.classList.toggle('run', isRunning);
+
+          freqNow.textContent = data.vfdOperatingFrequency.toFixed(1) + ' Hz';
+          voltNow.textContent = data.vfdOutputVoltage.toFixed(1) + ' V';
+
+          const enableCtrl = data.modeControl === 2;
+          btnStart.disabled = !enableCtrl;
+          btnStop.disabled = !enableCtrl;
+          btnSendFreq.disabled = !enableCtrl;
+          freq.disabled = !enableCtrl;
+
+          // ⚙️ Logic: sau 3 lần không phải Remote mới gửi STOP
+          if (!enableCtrl) {
+            nonRemoteCount++;
+            showStatusMessage(`⚠️ Đang ở chế độ Local (${nonRemoteCount}/3)`);
+
+            if (nonRemoteCount >= 3) {
+              const stopPayload = JSON.stringify({ Run: 0, Frequency: 0 });
+              client.publish(topicCmd, stopPayload);
+              lastRunState = 0;
+              showStatusMessage('🛑 Đã tự động dừng sau 3 lần không ở chế độ Remote');
+              nonRemoteCount = 0; // reset lại sau khi dừng
+            }
+          } else {
+            nonRemoteCount = 0; // reset khi quay lại Remote
+          }
+
+        } catch (e) {
+          console.log('Không parse được:', message.toString());
+        }
+      }
+    });
+
+    client.on('error', err => {
+      status.textContent = '❌ Lỗi MQTT: ' + err.message;
+    });
+
+    function showStatusMessage(msg) {
+      status.textContent = msg;
+      clearTimeout(showStatusMessage.timeout);
+      showStatusMessage.timeout = setTimeout(() => {
+        status.textContent = '✅ Đã kết nối đến MQTT Broker';
+      }, 2000);
+    }
+
+    // ======= Nút điều khiển =======
+    btnStart.onclick = () => {
+      const value = parseFloat(freq.value) || 0;
+      const payload = JSON.stringify({ Run: 1, Frequency: value });
+      client.publish(topicCmd, payload);
+      showStatusMessage('🚀 Đã gửi lệnh START');
+      lastRunState = 1;
+    };
+
+    btnStop.onclick = () => {
+      const payload = JSON.stringify({ Run: 0, Frequency: 0 });
+      client.publish(topicCmd, payload);
+      showStatusMessage('🛑 Đã gửi lệnh STOP');
+      lastRunState = 0;
+    };
+
+    btnSendFreq.onclick = () => {
+      const value = parseFloat(freq.value);
+      if (!isNaN(value)) {
+        const payload = JSON.stringify({ Run: lastRunState, Frequency: value });
+        client.publish(topicCmd, payload);
+        showStatusMessage('📡 Đã gửi tần số mới');
+      }
+    };
+  </script>
+</body>
+</html>

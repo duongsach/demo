@@ -2,244 +2,273 @@
 <html lang="vi">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Fanaro - Đường Sách - Web demo</title>
+  <meta name="viewport" content="width=480, height=272, initial-scale=1" />
+  <title>Fanaro - Đường sách</title>
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #0f1724;
-      color: #fff;
-      text-align: center;
-      padding: 40px;
+    :root{
+      --w:480px; --h:272px;
+      --bg:#eef2f7; --card:#ffffff; --accent:#2563eb; --muted:#6b7280;
+      --radius:12px; --shadow: 0 6px 18px rgba(20,23,39,0.08);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
     }
-    h1 { margin-bottom: 20px; }
-    .container {
-      background: #162033;
-      border-radius: 12px;
-      padding: 30px 40px;
-      display: inline-block;
-      text-align: left;
-      min-width: 360px;
-    }
-    .row {
-      margin: 15px 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    label {
-      display: inline-block;
-      width: 180px;
-      text-align: right;
-      margin-right: 10px;
-    }
-    input[type=number] {
-      width: 100px;
-      padding: 5px;
-      text-align: right;
-      border-radius: 4px;
-      border: none;
-      outline: none;
-    }
-    button {
-      padding: 8px 18px;
-      border: none;
-      border-radius: 5px;
-      cursor: pointer;
-      margin: 0 5px;
-    }
-    button.start { background: #16a34a; color: #fff; }
-    button.stop { background: #dc2626; color: #fff; }
-    button.send { background: #2563eb; color: #fff; }
-    button:disabled { opacity: 0.5; cursor: not-allowed; }
-    .led {
-      display:inline-block;
-      width:15px;
-      height:15px;
-      border-radius:50%;
-      margin-left:10px;
-      background:#555;
-    }
-    .on.auto {background:#facc15; box-shadow:0 0 10px #facc15;}
-    .on.run {background:#22c55e; box-shadow:0 0 10px #22c55e;}
-    #status {margin-top:15px; font-size:14px; color:#9ca3af; text-align:center;}
+    html,body{height:100%;}
+    body{margin:0; display:flex; align-items:center; justify-content:center; background:linear-gradient(180deg,var(--bg),#dfe7f6);}
+    .viewport{width:var(--w); height:var(--h); box-sizing:border-box; padding:14px; border-radius:8px; position:relative;
+      background:transparent; overflow:hidden; outline:1px solid rgba(0,0,0,0.04);}
+    .card{width:100%; height:100%; background:var(--card); border-radius:var(--radius); box-shadow:var(--shadow); display:flex; flex-direction:column; padding:14px; box-sizing:border-box;}
+    .header{display:flex; gap:12px; align-items:center;}
+    .logo{width:48px; height:48px; border-radius:10px; display:flex; align-items:center; justify-content:center; color:white; font-weight:700; font-size:18px;}
+    .logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain; /* hoặc cover nếu muốn lấp đầy */
+}
+    
+   .title{font-size:14px; font-weight:600;}
+    .subtitle{font-size:11px; color:var(--muted);}
+    .form{margin-top:12px; display:flex; flex-direction:column; gap:8px;}
+    label{font-size:11px; color:var(--muted);}
+    input[type="text"], input[type="password"]{width:100%; height:36px; padding:8px 10px; border-radius:8px; border:1px solid #e6e9ef; font-size:13px; box-sizing:border-box;}
+    .btn{padding:8px 12px; border-radius:10px; background:var(--accent); color:white; border:none; cursor:pointer; font-weight:600; font-size:13px;}
+    .btn:active{transform:translateY(1px);}    
+    .small{font-size:11px; color:var(--muted);}    
+    .footer{margin-top:auto; text-align:center; font-size:11px; color:var(--muted);}
+    .msg{height:20px; font-size:12px; color:#064e3b; margin-top:-25px;}
+
+    /* giao diện 2 */
+    #controlScreen{display:none; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; gap:16px; position:relative;}
+    .big-btn{width:70%; height:80px; font-size:28px; font-weight:700; border:none; border-radius:20px; box-shadow:var(--shadow); color:white; cursor:pointer;}
+    .fan-btn{background:#16a34a;}
+    .humi-btn{background:#0284c7;}
+    .exit-btn{position:absolute; top:10px; right:10px; padding:6px 10px; font-size:12px; border-radius:8px; border:none; background:#dc2626; color:white; cursor:pointer;}
+
+    /* giao diện 3 & 4 */
+    #fanScreen, #humiScreen{display:none; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; position:relative;}
+    .grid{display:grid; grid-template-columns:repeat(5,1fr); gap:10px; width:100%; padding:20px; box-sizing:border-box; justify-items:center;}
+    .grid button{width:70px; height:60px; font-size:18px; font-weight:600; border:none; border-radius:10px; color:white; cursor:pointer; box-shadow:var(--shadow);}
+    .fan-grid button{background:#16a34a;}
+    .humi-grid button{background:#0284c7;}
+    .back-btn{position:absolute; top:10px; right:10px; padding:6px 10px; font-size:12px; border-radius:8px; border:none; background:#dc2626; color:white; cursor:pointer;}
+
+    /* giao diện 5 - chi tiết F1 */
+    #fanDetailScreen, #manualScreen, #valveDetailScreen{display:none; width:100%; height:100%; flex-direction:column; align-items:center; justify-content:center; position:relative;}
+    .detail-card{width:100%; height:100%; border-radius:12px; box-shadow:var(--shadow); padding:10px; box-sizing:border-box;}
+    .detail-header{display:flex; align-items:center; gap:10px;}
+    .detail-header h2{margin:0;}
+    .icon-box{width:60px; height:60px; border-radius:8px; background:#000; display:flex; align-items:center; justify-content:center;}
+    .icon-box img{width:100%; height:100%; border-radius:8px;}
+    table{width:100%; border-collapse:collapse; margin-top:0px;}
+    td,th{text-align:center; border:1px dashed #aaa; font-size:12px; padding:1px;}
+    input[type="time"],input[type="number"]{width:70px; text-align:center;}
+    .switch{width:36px; height:20px; appearance:none; background:#ccc; border-radius:20px; position:relative; cursor:pointer;}
+    .switch:checked{background:#4ade80;}
+    .switch:checked::before{transform:translateX(16px);}
+    .switch::before{content:""; position:absolute; width:16px; height:16px; border-radius:50%; background:white; top:2px; left:2px; transition:0.2s;}
+    .manual-btn{margin-top:8px; width:100%; padding:4px; border-radius:6px; border:none; background:#6b7280; color:white; font-weight:600; cursor:pointer;height:30px;}
+
+    /* giao diện 6 - manual */
+    .manual-box{width:100%; height:90%; border-radius:12px; box-shadow:var(--shadow); padding:10px; box-sizing:border-box; font-size:18px;}
+    .manual-box button{border:none; border-radius:6px; font-weight:600; cursor:pointer;}
+    .start-btn{background:#16a34a; color:white; padding:6px 16px;}
+    .stop-btn{background:#dc2626; color:white; padding:6px 16px;}
+    .send-btn{background:#2563eb; color:white; padding:4px 16px;}
+    .status-dot{width:10px; height:10px; border-radius:50%; display:inline-block; margin-left:4px;}
+    .status-on{background:yellow;} .status-off{background:#555;}
   </style>
   <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
 </head>
 <body>
-  <h1>Điều Khiển Quạt Từ Xa</h1>
-  <div class="container">
+  <div class="viewport">
+    <!-- Giữ nguyên code cũ của bạn -->
+    <div id="loginScreen" class="card">
+      <div class="header">
+        <div class="logo"><img src="LOGO_FANARO.png" alt="Logo"></div>
+        <div>
+          <div class="title">FANARO | ĐƯỜNG SÁCH</div>
+          <div class="subtitle">HỆ THỐNG ĐIỀU KHIỂN QUẠT VÀ PHUN SƯƠNG</div>
+        </div>
+      </div>
 
-    <div class="row">
-      <button id="btnStart" class="start">BẬT (START)</button>
-      <button id="btnStop" class="stop">TẮT (STOP)</button>
+      <form id="loginForm" class="form" autocomplete="off">
+        <div>
+          <label for="username">Tên người dùng</label>
+          <input id="username" name="username" type="text" placeholder="nhập tên tài khoản" required />
+        </div>
+        <div>
+          <label for="password">Mật khẩu</label>
+          <input id="password" name="password" type="password" placeholder="nhập mật khẩu" required />
+        </div>
+        <div style="text-align:right; margin-top:6px;">
+          <button class="btn" type="submit">Đăng nhập</button>
+        </div>
+        <div class="msg" id="message" aria-live="polite"></div>
+      </form>
+      <div class="footer">© 2025</div>
     </div>
 
-    <div class="row">
-      <label for="freq">Tần số đặt (Hz):</label>
-      <input id="freq" type="number" min="0" max="50" step="0.1" value="0">
-      <button id="btnSendFreq" class="send">Gửi</button>
+    <div id="controlScreen">
+      <button class="exit-btn" id="exitBtn">Thoát</button>
+      <button class="big-btn fan-btn" id="fanBtn">FAN</button>
+      <button class="big-btn humi-btn" id="humiBtn">HUMINITY</button>
     </div>
 
-    <div class="row">
-      <label>Chế độ điều khiển:</label>
-      <span id="modeText">--</span>
-      <div id="modeLed" class="led"></div>
+    <div id="fanScreen">
+      <button class="back-btn" id="backFanBtn">Quay lại</button>
+      <div class="grid fan-grid">
+        <button id="f1Btn">F1</button><button>F2</button><button>F3</button><button>F4</button><button>F5</button>
+        <button>F6</button><button>F7</button><button>F8</button><button>F9</button><button>F10</button>
+      </div>
     </div>
 
-    <div class="row">
-      <label>Trạng thái quạt:</label>
-      <span id="runText">--</span>
-      <div id="runLed" class="led"></div>
+    <div id="humiScreen">
+      <button class="back-btn" id="backHumiBtn">Quay lại</button>
+      <div class="grid humi-grid">
+        <button id="v1Btn">V1</button><button>V2</button><button>V3</button><button>V4</button><button>V5</button>
+        <button>V6</button><button>V7</button><button>V8</button><button>V9</button><button>V10</button>
+      </div>
     </div>
 
-    <div class="row">
-      <label>Tần số hiện tại:</label>
-      <span id="freqNow">-- Hz</span>
+    <!-- GIAO DIỆN 5 - F1 DETAIL -->
+    <div id="fanDetailScreen">
+      <button class="back-btn" id="backFanDetail">Quay lại</button>
+      <div class="detail-card">
+        <div class="detail-header">
+          <div class="icon-box"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSsqj6kQGTXj3trIMlucXmKrSW0gRztP1vUyneDrJGGxPoppOoe3FawfiUQ_nL-0QU-NQM&usqp=CAU" alt="Fan"></div>
+          <h2>F1    Auto</h2>
+        </div>
+        <table>
+          <tr><th></th><th>From</th><th>To</th><th>On/Off</th></tr>
+          <tr><td>h1</td><td><input type="time"></td><td><input type="time"></td><td><input type="checkbox" class="switch"></td></tr>
+          <tr><td>h2</td><td><input type="time"></td><td><input type="time"></td><td><input type="checkbox" class="switch"></td></tr>
+          <tr><td>h3</td><td><input type="time"></td><td><input type="time"></td><td><input type="checkbox" class="switch"></td></tr>
+          <tr><td>t1</td><td><input type="number" value="12">°C</td><td><input type="number" value="12">°C</td><td></td></tr>
+        </table>
+        <button class="manual-btn" id="manualBtn">MANUAL</button>
+      </div>
     </div>
 
-    <div class="row">
-      <label>Điện áp ngõ ra:</label>
-      <span id="voltNow">-- V</span>
+    <!-- GIAO DIỆN 6 - MANUAL -->
+    <div id="manualScreen">
+      <button class="back-btn" id="backManualBtn">Quay lại</button>
+      <div class="detail-card">
+        <div class="detail-header">
+          <div class="icon-box"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSsqj6kQGTXj3trIMlucXmKrSW0gRztP1vUyneDrJGGxPoppOoe3FawfiUQ_nL-0QU-NQM&usqp=CAU" alt="Fan"></div>
+          <h2>F1    Manual</h2>
+          </div>
+          <div class="manual-box">
+            	<div><button class="start-btn">BẬT (START)</button> <button class="stop-btn">TẮT (STOP)</button></div>
+             	<div>Tần số đặt (Hz): <input type="number" value="0" style="width:50px"> <button class="send-btn">Gửi</button></div>
+             	<div>Chế độ điều khiển: Remote <span class="status-dot status-on"></span></div>
+       		<div>Trạng thái quạt: Dừng <span class="status-dot status-off"></span></div>
+         	<div>Tần số hiện tại: 0.0 Hz</div>
+         	<div>Điện áp ngõ ra: 0.0 V</div>
+   		<div style="margin-top:6px; font-size:11px;">✅ Đã kết nối đến MQTT Broker</div>
+      	   </div>
+      </div>
     </div>
 
-    <div id="status">⏳ Đang kết nối MQTT...</div>
+    <!-- GIAO DIỆN 7 - V1 DETAIL -->
+    <div id="valveDetailScreen">
+      <button class="back-btn" id="backValveDetail">Quay lại</button>
+      <div class="detail-card">
+        <div class="detail-header">
+          <div class="icon-box"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRDfARzoMjQ8D5gtGC5gMIRGFrbQO4ERzuz1Q&s" alt="Valve"></div>
+          <h2>V1    Auto</h2>
+        </div>
+        <table>
+          <tr><th></th><th>From</th><th>To</th><th>On/Off</th></tr>
+          <tr><td>h1</td><td><input type="time"></td><td><input type="time"></td><td><input type="checkbox" class="switch"></td></tr>
+          <tr><td>h2</td><td><input type="time"></td><td><input type="time"></td><td><input type="checkbox" class="switch"></td></tr>
+          <tr><td>h3</td><td><input type="time"></td><td><input type="time"></td><td><input type="checkbox" class="switch"></td></tr>
+          <tr><td>t1</td><td><input type="number" value="12">°C</td><td><input type="number" value="12">°C</td><td></td></tr>
+        </table>
+      </div>
+    </div>
   </div>
 
   <script>
-    const broker = 'wss://438c2ead2a734258bd69b47271629c50.s1.eu.hivemq.cloud:8884/mqtt';
-    const options = { username: 'Mqtt2025', password: 'Mqtt2025', reconnectPeriod: 2000 };
-    const topicCmd = 'esp8266/vfd/cmd';
-    const topicState = 'esp8266/vfd/state';
-    const client = mqtt.connect(broker, options);
+    /* === Giao diện điều hướng y như cũ === */
+    const loginScreen=document.getElementById('loginScreen'),controlScreen=document.getElementById('controlScreen'),
+    fanScreen=document.getElementById('fanScreen'),humiScreen=document.getElementById('humiScreen'),
+    fanDetailScreen=document.getElementById('fanDetailScreen'),manualScreen=document.getElementById('manualScreen'),
+    valveDetailScreen=document.getElementById('valveDetailScreen');
+    const showScreen=id=>{[loginScreen,controlScreen,fanScreen,humiScreen,fanDetailScreen,manualScreen,valveDetailScreen].forEach(s=>s.style.display='none');id.style.display='flex';};
+    document.getElementById('loginForm').addEventListener('submit',e=>{e.preventDefault();const u=username.value.trim(),p=password.value;if(u==='FANARO'&&p==='12345678')showScreen(controlScreen);else{message.style.color='#b91c1c';message.textContent='Sai tên đăng nhập hoặc mật khẩu.';}});
+    exitBtn.onclick=()=>showScreen(loginScreen);fanBtn.onclick=()=>showScreen(fanScreen);humiBtn.onclick=()=>showScreen(humiScreen);
+    backFanBtn.onclick=()=>showScreen(controlScreen);backHumiBtn.onclick=()=>showScreen(controlScreen);
+    f1Btn.onclick=()=>showScreen(fanDetailScreen);backFanDetail.onclick=()=>showScreen(fanScreen);
+    manualBtn.onclick=()=>showScreen(manualScreen);backManualBtn.onclick=()=>showScreen(fanDetailScreen);
+    v1Btn.onclick=()=>showScreen(valveDetailScreen);backValveDetail.onclick=()=>showScreen(humiScreen);
 
-    const status = document.getElementById('status');
-    const btnStart = document.getElementById('btnStart');
-    const btnStop = document.getElementById('btnStop');
-    const btnSendFreq = document.getElementById('btnSendFreq');
-    const freq = document.getElementById('freq');
-    const runLed = document.getElementById('runLed');
-    const runText = document.getElementById('runText');
-    const modeLed = document.getElementById('modeLed');
-    const modeText = document.getElementById('modeText');
-    const freqNow = document.getElementById('freqNow');
-    const voltNow = document.getElementById('voltNow');
+    /* === MQTT tích hợp vào giao diện 6 === */
+    const broker='wss://438c2ead2a734258bd69b47271629c50.s1.eu.hivemq.cloud:8884/mqtt';
+    const options={username:'Mqtt2025',password:'Mqtt2025',reconnectPeriod:2000};
+    const topicCmd='esp8266/vfd/cmd';
+    const topicState='esp8266/vfd/state';
+    const client=mqtt.connect(broker,options);
 
-    let lastRunState = 0;
-    let nonRemoteCount = 0;
-    let watchdogTimer = null;
+    const startBtn=manualScreen.querySelector('.start-btn'),
+          stopBtn=manualScreen.querySelector('.stop-btn'),
+          sendBtn=manualScreen.querySelector('.send-btn'),
+          freqInput=manualScreen.querySelector('input[type="number"]'),
+          statusLines=manualScreen.querySelectorAll('.manual-box div'),
+          controlDot=manualScreen.querySelectorAll('.status-dot')[0],
+          runDot=manualScreen.querySelectorAll('.status-dot')[1];
 
-    // Disable khi mới load
-    btnStart.disabled = true;
-    btnStop.disabled = true;
-    btnSendFreq.disabled = true;
-    freq.disabled = true;
+    let lastRunState=0,nonRemoteCount=0,watchdog=null;
 
-    freq.addEventListener('input', () => {
-      if (parseFloat(freq.value) > 50) freq.value = 50;
-      if (parseFloat(freq.value) < 0) freq.value = 0;
-    });
+    // Disable khi chưa kết nối
+    startBtn.disabled=true; stopBtn.disabled=true; sendBtn.disabled=true; freqInput.disabled=true;
 
-    client.on('connect', () => {
-      status.textContent = '✅ Đã kết nối đến MQTT Broker';
-      client.subscribe(topicState);
-    });
+    freqInput.addEventListener('input',()=>{if(freqInput.value>50)freqInput.value=50;if(freqInput.value<0)freqInput.value=0;});
 
-    client.on('message', (topic, message) => {
-      if (topic === topicState) {
-        try {
-          const data = JSON.parse(message.toString());
-          let modeStr = 'None';
-          if (data.modeControl === 1) modeStr = 'Local';
-          else if (data.modeControl === 2) modeStr = 'Remote';
-          modeText.textContent = modeStr;
+    client.on('connect',()=>{statusLines[6].textContent='✅ Đã kết nối đến MQTT Broker';client.subscribe(topicState);});
+    client.on('error',err=>statusLines[6].textContent='❌ Lỗi MQTT: '+err.message);
 
-          modeLed.classList.toggle('on', data.modeControl === 2);
-          modeLed.classList.toggle('auto', data.modeControl === 2);
-
-          const isRunning = data.vfdStatus === 1;
-          lastRunState = isRunning ? 1 : 0;
-          runText.textContent = isRunning ? 'Đang chạy' : 'Dừng';
-          runLed.classList.toggle('on', isRunning);
-          runLed.classList.toggle('run', isRunning);
-
-          freqNow.textContent = data.vfdOperatingFrequency.toFixed(1) + ' Hz';
-          voltNow.textContent = data.vfdOutputVoltage.toFixed(1) + ' V';
-
-          const enableCtrl = data.modeControl === 2;
-          btnStart.disabled = !enableCtrl;
-          btnStop.disabled = !enableCtrl;
-          btnSendFreq.disabled = !enableCtrl;
-          freq.disabled = !enableCtrl;
-
-          // 🕒 Reset watchdog mỗi khi có dữ liệu mới
-          clearTimeout(watchdogTimer);
-          watchdogTimer = setTimeout(() => {
-            const resetState = {
-              modeControl: 0,
-              vfdStatus: 0,
-              vfdOperatingFrequency: 0,
-              vfdOutputVoltage: 0
-            };
-            client.publish(topicState, JSON.stringify(resetState));
-            showStatusMessage('⚠️ MQTT không phản hồi >10s → gửi reset');
-          }, 10000);
-
-          // ⚙️ Logic: sau 3 lần không phải Remote mới gửi STOP
-          if (!enableCtrl) {
-            nonRemoteCount++;
-            showStatusMessage(`⚠️ Đang ở chế độ Local (${nonRemoteCount}/3)`);
-            if (nonRemoteCount >= 3) {
-              const stopPayload = JSON.stringify({ Run: 0, Frequency: 0 });
-              client.publish(topicCmd, stopPayload);
-              lastRunState = 0;
-              showStatusMessage('🛑 Đã tự động dừng sau 3 lần không ở chế độ Remote');
-              nonRemoteCount = 0;
-            }
-          } else {
-            nonRemoteCount = 0; // reset khi quay lại Remote
+    client.on('message',(topic,message)=>{
+      if(topic!==topicState)return;
+      try{
+        const data=JSON.parse(message.toString());
+        let modeStr='None';if(data.modeControl===1)modeStr='Local';else if(data.modeControl===2)modeStr='Remote';
+        statusLines[2].innerHTML=`Chế độ điều khiển: ${modeStr} <span class="status-dot ${data.modeControl===2?'status-on':'status-off'}"></span>`;
+        const running=data.vfdStatus===1;
+        statusLines[3].innerHTML=`Trạng thái quạt: ${running?'Đang chạy':'Dừng'} <span class="status-dot ${running?'status-on':'status-off'}"></span>`;
+        statusLines[4].textContent=`Tần số hiện tại: ${data.vfdOperatingFrequency.toFixed(1)} Hz`;
+        statusLines[5].textContent=`Điện áp ngõ ra: ${data.vfdOutputVoltage.toFixed(1)} V`;
+        const enable=data.modeControl===2;
+        startBtn.disabled=stopBtn.disabled=sendBtn.disabled=freqInput.disabled=!enable;
+        clearTimeout(watchdog);
+        watchdog=setTimeout(()=>{
+          client.publish(topicState,JSON.stringify({modeControl:0,vfdStatus:0,vfdOperatingFrequency:0,vfdOutputVoltage:0}));
+          statusLines[6].textContent='⚠️ MQTT không phản hồi >10s → reset';
+        },10000);
+        if(!enable){
+          nonRemoteCount++;
+          if(nonRemoteCount>=3){
+            client.publish(topicCmd,JSON.stringify({Run:0,Frequency:0}));
+            nonRemoteCount=0;lastRunState=0;
+            statusLines[6].textContent='🛑 Auto STOP sau 3 lần Local';
           }
-
-        } catch (e) {
-          console.log('Không parse được:', message.toString());
-        }
-      }
+        }else nonRemoteCount=0;
+      }catch(e){console.log('Parse lỗi:',message.toString());}
     });
 
-    client.on('error', err => {
-      status.textContent = '❌ Lỗi MQTT: ' + err.message;
-    });
-
-    function showStatusMessage(msg) {
-      status.textContent = msg;
-      clearTimeout(showStatusMessage.timeout);
-      showStatusMessage.timeout = setTimeout(() => {
-        status.textContent = '✅ Đã kết nối đến MQTT Broker';
-      }, 2000);
-    }
-
-    // ======= Nút điều khiển =======
-    btnStart.onclick = () => {
-      const value = parseFloat(freq.value) || 0;
-      const payload = JSON.stringify({ Run: 1, Frequency: value });
-      client.publish(topicCmd, payload);
-      showStatusMessage('🚀 Đã gửi lệnh START');
-      lastRunState = 1;
+    startBtn.onclick=()=>{
+      const f=parseFloat(freqInput.value)||0;
+      client.publish(topicCmd,JSON.stringify({Run:1,Frequency:f}));
+      statusLines[6].textContent='🚀 Gửi START';
+      lastRunState=1;
     };
-
-    btnStop.onclick = () => {
-      const payload = JSON.stringify({ Run: 0, Frequency: 0 });
-      client.publish(topicCmd, payload);
-      showStatusMessage('🛑 Đã gửi lệnh STOP');
-      lastRunState = 0;
+    stopBtn.onclick=()=>{
+      client.publish(topicCmd,JSON.stringify({Run:0,Frequency:0}));
+      statusLines[6].textContent='🛑 Gửi STOP';
+      lastRunState=0;
     };
-
-    btnSendFreq.onclick = () => {
-      const value = parseFloat(freq.value);
-      if (!isNaN(value)) {
-        const payload = JSON.stringify({ Run: lastRunState, Frequency: value });
-        client.publish(topicCmd, payload);
-        showStatusMessage('📡 Đã gửi tần số mới');
+    sendBtn.onclick=()=>{
+      const f=parseFloat(freqInput.value);
+      if(!isNaN(f)){
+        client.publish(topicCmd,JSON.stringify({Run:lastRunState,Frequency:f}));
+        statusLines[6].textContent='📡 Gửi tần số mới';
       }
     };
   </script>
